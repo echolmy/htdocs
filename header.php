@@ -4,8 +4,6 @@
   // ONLY after the user's login credentials have been verified via a 
   // database query.
   session_start();
-  $_SESSION['logged_in'] = false;
-  $_SESSION['account_type'] = 'seller';
 ?>
 
 
@@ -38,6 +36,7 @@
   // Displays either login or logout on the right, depending on user's
   // current status (session).
   if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] == true) {
+    echo '<span class="nav-link">Welcome, ' . htmlspecialchars($_SESSION['username']) . '</span>';
     echo '<a class="nav-link" href="logout.php">Logout</a>';
   }
   else {
