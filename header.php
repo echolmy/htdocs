@@ -90,12 +90,12 @@
       <div class="modal-body">
         <form method="POST" action="login_result.php">
           <div class="form-group">
-            <label for="email">Email</label>
-            <input type="text" class="form-control" id="email" placeholder="Email">
+            <label for="loginEmail">Email</label>
+            <input type="text" class="form-control" id="loginEmail" name="email" placeholder="Email">
           </div>
           <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" class="form-control" id="password" placeholder="Password">
+            <label for="loginPassword">Password</label>
+            <input type="password" class="form-control" id="loginPassword" name="password" placeholder="Password">
           </div>
           <button type="submit" class="btn btn-primary form-control">Sign in</button>
         </form>

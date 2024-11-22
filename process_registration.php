@@ -79,7 +79,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     } 
     // elseif (strlen($password) < 8) {
     //     $errors[] = "Password must be at least 8 characters long";
-    // }
+    // }    
 
     // 4. password_confirmation
     if (empty($password_confirmation)) {
