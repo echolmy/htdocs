@@ -1,6 +1,29 @@
 <?php include_once("header.php")?>
 <?php require("utilities.php")?>
 
+<?php
+// 数据库连接代码
+$host = '127.0.0.1';
+$db = 'auction_system';
+$user = 'root';
+$pass = '';
+$charset = 'utf8mb4';
+
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES => false,
+];
+
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+} catch (\PDOException $e) {
+    echo "Database connection failed: " . $e->getMessage();
+    exit;
+}
+?>
+
 <div class="container">
 
 <h2 class="my-3">Browse listings</h2>
@@ -57,8 +80,17 @@
 
 <?php
   // Retrieve these from the URL
+  $keyword = $_GET['keyword'] ?? '';
+  $category = $_GET['cat'] ?? 'all';
+  $ordering = $_GET['order_by'] ?? 'pricelow';
+  $curr_page = $_GET['page'] ?? 1;
+
+  // 构造 SQL 查询
+  $query = "SELECT * FROM auction_item WHERE status = 'Active'";
+
   if (!isset($_GET['keyword'])) {
     // TODO: Define behavior if a keyword has not been specified.
+    $keyword = ''; 
   }
   else {
     $keyword = $_GET['keyword'];
@@ -66,6 +98,7 @@
 
   if (!isset($_GET['cat'])) {
     // TODO: Define behavior if a category has not been specified.
+    $category = 'all';
   }
   else {
     $category = $_GET['cat'];
@@ -73,6 +106,7 @@
   
   if (!isset($_GET['order_by'])) {
     // TODO: Define behavior if an order_by value has not been specified.
+    $ordering = 'pricelow';
   }
   else {
     $ordering = $_GET['order_by'];
@@ -88,10 +122,75 @@
   /* TODO: Use above values to construct a query. Use this query to 
      retrieve data from the database. (If there is no form data entered,
      decide on appropriate default value/default query to make. */
-  
+     $query = "SELECT * FROM auction_item WHERE status = 'Active'";
+  // 如果有关键词
+  if (!empty($keyword)) {
+    $query .= " AND (title LIKE :keyword OR description LIKE :keyword)";
+  }
+
+  // 如果有分类
+  if ($category !== 'all') {
+    $query .= " AND conditions = :category";
+  }
+
+  // 排序逻辑
+  switch ($ordering) {
+    case 'pricelow':
+        $query .= " ORDER BY current_price ASC";
+        break;
+    case 'pricehigh':
+        $query .= " ORDER BY current_price DESC";
+        break;
+    case 'date':
+        $query .= " ORDER BY end_date ASC";
+        break;
+  }
+
+  // 分页逻辑
+  $offset = ($curr_page - 1) * $results_per_page;
+  $query .= " LIMIT :limit OFFSET :offset";
+
+  // 准备 SQL 语句
+  $stmt = $pdo->prepare($query);
+
+  // 绑定参数
+  if (!empty($keyword)) {
+    $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+  }
+  if ($category !== 'all') {
+    $stmt->bindValue(':category', $category, PDO::PARAM_STR);
+  }
+  $stmt->bindValue(':limit', $results_per_page, PDO::PARAM_INT);
+  $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+  // 执行查询
+  $stmt->execute();
+
+  // 获取查询结果
+  $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+  // 获取总结果数（用于分页）
+  $total_query = "SELECT COUNT(*) FROM auction_item WHERE status = 'Active'";
+  if (!empty($keyword)) {
+    $total_query .= " AND (title LIKE :keyword OR description LIKE :keyword)";
+  }
+  if ($category !== 'all') {
+    $total_query .= " AND conditions = :category";
+  }
+  $total_stmt = $pdo->prepare($total_query);
+  if (!empty($keyword)) {
+    $total_stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+  }
+  if ($category !== 'all') {
+    $total_stmt->bindValue(':category', $category, PDO::PARAM_STR);
+  }
+  $total_stmt->execute();
+
+
   /* For the purposes of pagination, it would also be helpful to know the
      total number of results that satisfy the above query */
-  $num_results = 96; // TODO: Calculate me for real
+  // $num_results = 96; // TODO: Calculate me for real
+  $num_results = $total_stmt->fetchColumn();
   $results_per_page = 10;
   $max_page = ceil($num_results / $results_per_page);
 ?>
@@ -99,13 +198,33 @@
 <div class="container mt-5">
 
 <!-- TODO: If result set is empty, print an informative message. Otherwise... -->
+ 
+<?php
+// 如果没有结果，显示提示信息
+if (empty($results)) {
+    echo '<p class="text-center">No auctions found matching your criteria.</p>';
+} else {
+    echo '<ul class="list-group">';
+    foreach ($results as $item) {
+        $item_id = $item['auctionid'];
+        $title = $item['title'];
+        $description = $item['description'];
+        $current_price = $item['current_price'];
+        $num_bids = 0; // 如果有竞标表，可以动态统计竞标数量
+        $end_date = new DateTime($item['end_date']);
+        
+        // 使用 utilities.php 中的函数打印 HTML
+        print_listing_li($item_id, $title, $description, $current_price, $num_bids, $end_date);
+    }
+    echo '</ul>';
+}
+?>
 
-<ul class="list-group">
 
 <!-- TODO: Use a while loop to print a list item for each auction listing
      retrieved from the query -->
 
-<?php
+<!-- <?php
   // Demonstration of what listings will look like using dummy data.
   $item_id = "87021";
   $title = "Dummy title";
@@ -125,7 +244,7 @@
   $end_date = new DateTime('2020-11-02T00:00:00');
   
   print_listing_li($item_id, $title, $description, $current_price, $num_bids, $end_date);
-?>
+?> -->
 
 </ul>
 
