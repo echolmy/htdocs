@@ -18,8 +18,7 @@ try {
     $connection = new PDO('mysql:host=localhost;dbname=auction_system', 'root', '');
     $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    file_put_contents("debug.txt", "Test connection failed: " . $e->getMessage() . "\n", FILE_APPEND);
-    exit();
+    die("Connection failed. Please try again later.");
 }
 
 
@@ -120,11 +119,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             $connection->commit();
 
             // set session
+            $_SESSION['logged_in'] = true;
             $_SESSION['userid'] = $userid;
             $_SESSION['email'] = $email;
             $_SESSION['username'] = $username;
             $_SESSION['account_type'] = $account_type;
             
+
             header("Location: index.php");
             exit();
             
@@ -134,15 +135,15 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 $connection->rollBack();
             }
             
-            $errors[] = "Registration failed: " . $e->getMessage();
+            $errors[] = "Registration failed. Please try again later.";
             $_SESSION['errors'] = $errors;
-            file_put_contents("debug.txt", print_r($errors, true), FILE_APPEND);
+            // file_put_contents("debug.txt", print_r($errors, true), FILE_APPEND);
             header("Location: register.php");
             exit();
         }
     } 
     else {
-        file_put_contents("debug.txt", print_r($errors, true), FILE_APPEND);
+        // file_put_contents("debug.txt", print_r($errors, true), FILE_APPEND);
         // if validation failed, go back to register.php
         $_SESSION['errors'] = $errors;
         header("Location: register.php");
@@ -151,7 +152,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 } else {
     // NOT a POST request
     header("Location: register.php");
-    file_put_contents("debug.txt", "not a POST request\n", FILE_APPEND);
+    // file_put_contents("debug.txt", "not a POST request\n", FILE_APPEND);
     exit();
 }
 
